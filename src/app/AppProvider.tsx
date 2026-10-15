@@ -4,6 +4,8 @@ import type { ReactNode } from 'react';
 
 import type { Perfil } from '../domain/types';
 import { crearRepoAsyncStorage } from '../services/asyncStorageRepo';
+import { crearBorradorStorage } from '../services/borradorStorage';
+import type { BorradorRepository } from '../services/borradorStorage';
 import { guardarPerfil as persistirPerfil, leerPerfil } from '../services/perfilStorage';
 import type { SalidasRepository } from '../services/SalidasRepository';
 
@@ -14,6 +16,7 @@ type AppContexto = {
   perfil: Perfil | null;
   guardarPerfil: (perfil: Perfil) => Promise<void>;
   salidas: SalidasRepository;
+  borrador: BorradorRepository;
 };
 
 const Contexto = createContext<AppContexto | null>(null);
@@ -26,6 +29,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [cargando, setCargando] = useState(true);
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const salidas = useMemo(() => crearRepoAsyncStorage(AsyncStorage), []);
+  const borrador = useMemo(() => crearBorradorStorage(AsyncStorage), []);
 
   useEffect(() => {
     leerPerfil(AsyncStorage)
@@ -39,8 +43,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const valor = useMemo(
-    () => ({ cargando, perfil, guardarPerfil, salidas }),
-    [cargando, perfil, guardarPerfil, salidas],
+    () => ({ cargando, perfil, guardarPerfil, salidas, borrador }),
+    [cargando, perfil, guardarPerfil, salidas, borrador],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
