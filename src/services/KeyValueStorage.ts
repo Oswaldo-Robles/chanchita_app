@@ -1,0 +1,5 @@
+/** Lo mínimo que necesitamos de AsyncStorage; permite inyectar uno falso en tests. */
+export interface KeyValueStorage {
+  getItem(key: string): Promise<string | null>;
+  setItem(key: string, value: string): Promise<void>;
+}
