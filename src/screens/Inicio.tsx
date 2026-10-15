@@ -1,10 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { useApp } from '../app/AppProvider';
+
 export default function Inicio() {
+  const { perfil } = useApp();
+
   return (
     <View style={styles.container}>
       <Text style={styles.titulo}>Chanchita 🐷</Text>
-      <Text>Cuadra las cuentas de tus salidas</Text>
+      <Text>Hola, {perfil?.nombre}. Cuadra las cuentas de tus salidas.</Text>
     </View>
   );
 }
