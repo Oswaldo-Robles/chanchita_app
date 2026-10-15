@@ -7,6 +7,7 @@ export type Participante = {
   id: string;
   nombre: string;
   telefono?: string; // 9 dígitos, ej. 987654321
+  esOrganizador?: boolean; // el dueño de la app; no se puede quitar de la salida
 };
 
 export type Gasto = {
@@ -32,4 +33,11 @@ export type Transferencia = {
   de: string; // id del deudor
   a: string; // id del acreedor
   montoCentimos: number;
+};
+
+/** Lo que el usuario lleva escrito al crear una salida y todavía no guardó. */
+export type BorradorSalida = {
+  nombre: string;
+  fecha: string;
+  participantes: Participante[];
 };
