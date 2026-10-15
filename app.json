@@ -17,10 +17,28 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.chanchita.app"
+      "package": "com.chanchita.app",
+      "permissions": [
+        "android.permission.READ_CONTACTS",
+        "android.permission.WRITE_CONTACTS"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Chanchita usa tus contactos para que elijas a tus amigos y puedas cobrarles por WhatsApp."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "4ce0137b-e927-41e1-b930-cfae51ed09c8"
+      }
+    },
+    "owner": "jasas_dev"
   }
 }
