@@ -1,10 +1,12 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useApp } from '../app/AppProvider';
 import type { RootStackParamList } from '../app/navegacion';
 import { generarId } from '../domain/id';
+import { formatearMonto } from '../domain/montos';
 import { puedeQuitarParticipante, yaEstaAgregado } from '../domain/salidas';
 import type { Salida } from '../domain/types';
 import AgregarParticipante from './AgregarParticipante';
@@ -18,9 +20,12 @@ export default function DetalleSalida({ route, navigation }: Props) {
   const [salida, setSalida] = useState<Salida | null | undefined>(undefined); // undefined = cargando
   const [agregando, setAgregando] = useState(false);
 
-  useEffect(() => {
-    salidas.obtener(salidaId).then(setSalida);
-  }, [salidas, salidaId]);
+  // Recarga al volver del formulario de gasto.
+  useFocusEffect(
+    useCallback(() => {
+      salidas.obtener(salidaId).then(setSalida);
+    }, [salidas, salidaId]),
+  );
 
   useEffect(() => {
     if (salida) navigation.setOptions({ title: salida.nombre });
@@ -114,7 +119,40 @@ export default function DetalleSalida({ route, navigation }: Props) {
       </Pressable>
 
       <Text style={styles.seccion}>Gastos</Text>
-      <Text style={styles.suave}>Aquí aparecerán los gastos de la salida.</Text>
+      {salida.gastos.length === 0 && <Text style={styles.suave}>Aún no hay gastos.</Text>}
+      {salida.gastos.map((g) => {
+        const nombre = (id: string) => salida.participantes.find((p) => p.id === id)?.nombre ?? '?';
+        const entre =
+          g.divididoEntre.length === salida.participantes.length
+            ? 'todos'
+            : g.divididoEntre.map(nombre).join(', ');
+        return (
+          <Pressable
+            key={g.id}
+            style={styles.fila}
+            onPress={() => navigation.navigate('FormGasto', { salidaId: salida.id, gastoId: g.id })}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={styles.filaNombre}>{g.descripcion}</Text>
+              <Text style={styles.filaDetalle}>
+                Pagó {nombre(g.pagadoPor)} · entre {entre}
+              </Text>
+            </View>
+            <Text style={styles.filaNombre}>{formatearMonto(g.montoCentimos)}</Text>
+          </Pressable>
+        );
+      })}
+      {salida.gastos.length > 0 && (
+        <Text style={styles.total}>
+          Total: {formatearMonto(salida.gastos.reduce((suma, g) => suma + g.montoCentimos, 0))}
+        </Text>
+      )}
+      <Pressable
+        style={styles.botonSecundario}
+        onPress={() => navigation.navigate('FormGasto', { salidaId: salida.id })}
+      >
+        <Text style={styles.botonSecundarioTexto}>+ Agregar gasto</Text>
+      </Pressable>
 
       <Pressable style={styles.eliminar} onPress={confirmarEliminar}>
         <Text style={styles.eliminarTexto}>Eliminar salida</Text>
@@ -146,6 +184,7 @@ const styles = StyleSheet.create({
   },
   filaNombre: { fontSize: 16, fontWeight: '500' },
   filaDetalle: { color: colores.textoSuave, marginTop: 2 },
+  total: { fontWeight: '700', fontSize: 16, textAlign: 'right', marginTop: 10 },
   quitar: { color: colores.error, fontWeight: '600' },
   botonSecundario: {
     borderWidth: 1,
