@@ -6,8 +6,10 @@ import type { Perfil } from '../domain/types';
 import { crearRepoAsyncStorage } from '../services/asyncStorageRepo';
 import { crearBorradorStorage } from '../services/borradorStorage';
 import type { BorradorRepository } from '../services/borradorStorage';
+import type { Mensajero } from '../services/Mensajero';
 import { guardarPerfil as persistirPerfil, leerPerfil } from '../services/perfilStorage';
 import type { SalidasRepository } from '../services/SalidasRepository';
+import { crearWhatsAppMensajero } from '../services/whatsappMensajero';
 
 type AppContexto = {
   /** true mientras se lee el perfil guardado al abrir la app */
@@ -17,6 +19,7 @@ type AppContexto = {
   guardarPerfil: (perfil: Perfil) => Promise<void>;
   salidas: SalidasRepository;
   borrador: BorradorRepository;
+  mensajero: Mensajero;
 };
 
 const Contexto = createContext<AppContexto | null>(null);
@@ -30,6 +33,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const salidas = useMemo(() => crearRepoAsyncStorage(AsyncStorage), []);
   const borrador = useMemo(() => crearBorradorStorage(AsyncStorage), []);
+  const mensajero = useMemo(() => crearWhatsAppMensajero(), []);
 
   useEffect(() => {
     leerPerfil(AsyncStorage)
@@ -43,8 +47,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const valor = useMemo(
-    () => ({ cargando, perfil, guardarPerfil, salidas, borrador }),
-    [cargando, perfil, guardarPerfil, salidas, borrador],
+    () => ({ cargando, perfil, guardarPerfil, salidas, borrador, mensajero }),
+    [cargando, perfil, guardarPerfil, salidas, borrador, mensajero],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
