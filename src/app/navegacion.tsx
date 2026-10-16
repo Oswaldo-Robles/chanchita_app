@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
 
 import DetalleSalida from '../screens/DetalleSalida';
+import FormGasto from '../screens/FormGasto';
 import Inicio from '../screens/Inicio';
 import NuevaSalida from '../screens/NuevaSalida';
 import Onboarding from '../screens/Onboarding';
@@ -13,6 +14,7 @@ export type RootStackParamList = {
   Inicio: undefined;
   NuevaSalida: undefined;
   DetalleSalida: { salidaId: string };
+  FormGasto: { salidaId: string; gastoId?: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -40,6 +42,7 @@ export default function Navegacion() {
               options={{ title: 'Nueva salida' }}
             />
             <Stack.Screen name="DetalleSalida" component={DetalleSalida} options={{ title: '' }} />
+            <Stack.Screen name="FormGasto" component={FormGasto} />
           </>
         ) : (
           <Stack.Screen name="Onboarding" component={Onboarding} options={{ headerShown: false }} />
