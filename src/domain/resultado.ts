@@ -1,4 +1,5 @@
 import { calcularBalances } from './balances';
+import { totalGastos } from './gastos';
 import { formatearMonto } from './montos';
 import { minimizarTransferencias } from './transferencias';
 import type { Salida } from './types';
@@ -26,6 +27,7 @@ export type Resultado = {
   filas: FilaBalance[];
   transferencias: FilaTransferencia[];
   todoCuadrado: boolean;
+  totalTexto: string; // total gastado en la salida, ej. "S/ 52.50"
 };
 
 /** Convierte el cálculo del dominio en filas listas para mostrar (sin lógica en la pantalla). */
@@ -55,5 +57,10 @@ export function armarFilasResultado(salida: Salida): Resultado {
     }),
   );
 
-  return { filas, transferencias, todoCuadrado: transferencias.length === 0 };
+  return {
+    filas,
+    transferencias,
+    todoCuadrado: transferencias.length === 0,
+    totalTexto: formatearMonto(totalGastos(salida.gastos)),
+  };
 }

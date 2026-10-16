@@ -1,4 +1,4 @@
-import { validarGasto } from './gastos';
+import { totalGastos, validarGasto } from './gastos';
 
 const valido = { descripcion: 'Pizza', montoCentimos: 4000, divididoEntre: ['a', 'b'] };
 
@@ -24,5 +24,15 @@ describe('validarGasto', () => {
     const r = validarGasto({ ...valido, divididoEntre: [] });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.errores.divididoEntre).toBeDefined();
+  });
+});
+
+describe('totalGastos', () => {
+  it('suma los montos en céntimos', () => {
+    expect(totalGastos([{ montoCentimos: 4000 }, { montoCentimos: 1250 }])).toBe(5250);
+  });
+
+  it('sin gastos es 0', () => {
+    expect(totalGastos([])).toBe(0);
   });
 });

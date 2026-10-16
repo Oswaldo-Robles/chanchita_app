@@ -22,6 +22,7 @@ describe('armarFilasResultado', () => {
     );
 
     expect(r.todoCuadrado).toBe(false);
+    expect(r.totalTexto).toBe('S/ 30.00');
     expect(r.filas).toEqual([
       { id: 'ana', nombre: 'Ana', balanceCentimos: 2000, montoTexto: 'S/ 20.00', estado: 'recibe' },
       { id: 'beto', nombre: 'Beto', balanceCentimos: -1000, montoTexto: 'S/ 10.00', estado: 'debe' },
@@ -44,6 +45,7 @@ describe('armarFilasResultado', () => {
   it('salida sin gastos: todo cuadrado y sin transferencias', () => {
     const r = armarFilasResultado(salida([]));
     expect(r.todoCuadrado).toBe(true);
+    expect(r.totalTexto).toBe('S/ 0.00');
     expect(r.transferencias).toEqual([]);
     expect(r.filas.every((f) => f.estado === 'neutro')).toBe(true);
   });

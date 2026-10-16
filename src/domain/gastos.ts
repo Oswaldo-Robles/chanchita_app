@@ -19,3 +19,8 @@ export function validarGasto(datos: DatosGasto): ResultadoGasto {
 
   return Object.keys(errores).length > 0 ? { ok: false, errores } : { ok: true };
 }
+
+/** Suma en céntimos de todos los gastos de una salida. */
+export function totalGastos(gastos: { montoCentimos: number }[]): number {
+  return gastos.reduce((suma, g) => suma + g.montoCentimos, 0);
+}
