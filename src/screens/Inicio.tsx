@@ -24,7 +24,7 @@ export default function Inicio({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.saludo}>Hola, {perfil?.nombre} 👋</Text>
+      <Text className="mb-3 text-2xl font-bold text-pink-600">Hola, {perfil?.nombre} 👋</Text>
 
       <FlatList
         data={lista ?? []}
@@ -52,8 +52,11 @@ export default function Inicio({ navigation }: Props) {
         )}
       />
 
-      <Pressable style={styles.boton} onPress={() => navigation.navigate('NuevaSalida')}>
-        <Text style={styles.botonTexto}>+ Nueva salida</Text>
+      <Pressable
+        className="items-center rounded-xl bg-pink-600 p-4 active:bg-pink-700"
+        onPress={() => navigation.navigate('NuevaSalida')}
+      >
+        <Text className="text-base font-bold text-white">+ Nueva salida</Text>
       </Pressable>
     </View>
   );

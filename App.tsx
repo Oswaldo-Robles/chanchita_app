@@ -1,3 +1,5 @@
+import './global.css';
+
 import { StatusBar } from 'expo-status-bar';
 
 import { AppProvider } from './src/app/AppProvider';
