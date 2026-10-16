@@ -1,12 +1,14 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useApp } from '../app/AppProvider';
 import type { RootStackParamList } from '../app/navegacion';
 import { armarFilasResultado } from '../domain/resultado';
 import type { EstadoBalance } from '../domain/resultado';
 import type { Salida } from '../domain/types';
+import { cobrarTransferencia, compartirResumen } from '../services/cobros';
+import type { ResultadoEnvio } from '../services/Mensajero';
 import { colores } from './tema';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Resultado'>;
@@ -25,7 +27,7 @@ const ETIQUETA_BALANCE: Record<EstadoBalance, string> = {
 
 export default function Resultado({ route }: Props) {
   const { salidaId } = route.params;
-  const { salidas } = useApp();
+  const { salidas, mensajero } = useApp();
   const [salida, setSalida] = useState<Salida | null | undefined>(undefined);
 
   // Siempre se calcula desde los gastos guardados: nunca queda desactualizado.
@@ -50,6 +52,10 @@ export default function Resultado({ route }: Props) {
 
   const { filas, transferencias, todoCuadrado } = armarFilasResultado(salida);
 
+  function avisarSiFallo(r: ResultadoEnvio) {
+    if (!r.ok) Alert.alert('No se pudo abrir WhatsApp', r.motivo);
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.seccion}>Balance de cada uno</Text>
@@ -72,8 +78,23 @@ export default function Resultado({ route }: Props) {
               {t.deNombre} → {t.aNombre}
             </Text>
             <Text style={styles.monto}>{t.montoTexto}</Text>
+            <Pressable
+              style={styles.cobrar}
+              onPress={() => cobrarTransferencia(mensajero, salida, t).then(avisarSiFallo)}
+            >
+              <Text style={styles.cobrarTexto}>Cobrar</Text>
+            </Pressable>
           </View>
         ))
+      )}
+
+      {!todoCuadrado && (
+        <Pressable
+          style={styles.compartir}
+          onPress={() => compartirResumen(mensajero, salida).then(avisarSiFallo)}
+        >
+          <Text style={styles.compartirTexto}>Compartir resumen</Text>
+        </Pressable>
       )}
     </ScrollView>
   );
@@ -93,5 +114,22 @@ const styles = StyleSheet.create({
   filaNombre: { flex: 1, fontSize: 16 },
   balance: { fontWeight: '600', fontSize: 16 },
   monto: { fontWeight: '700', fontSize: 16 },
+  cobrar: {
+    backgroundColor: colores.primario,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    marginLeft: 12,
+  },
+  cobrarTexto: { color: '#fff', fontWeight: '600' },
+  compartir: {
+    borderWidth: 1,
+    borderColor: colores.primario,
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  compartirTexto: { color: colores.primario, fontWeight: '600' },
   cuadrado: { fontSize: 20, textAlign: 'center', marginTop: 24 },
 });
