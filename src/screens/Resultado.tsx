@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, Text, View } from 'react-native';
 
 import { useApp } from '../app/AppProvider';
 import type { RootStackParamList } from '../app/navegacion';
@@ -9,25 +9,36 @@ import type { EstadoBalance } from '../domain/resultado';
 import type { Salida } from '../domain/types';
 import { cobrarTransferencia, compartirResumen } from '../services/cobros';
 import type { ResultadoEnvio } from '../services/Mensajero';
-import { colores } from './tema';
+import { useTema } from './tema';
+import { Avatar, Boton } from './ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Resultado'>;
 
-const COLOR_BALANCE: Record<EstadoBalance, string> = {
-  recibe: colores.exito,
-  debe: colores.error,
-  neutro: colores.textoSuave,
+// El color nunca va solo: cada estado también lleva su texto ("le deben", "debe", "al día").
+const PUNTO: Record<EstadoBalance, string> = {
+  recibe: 'bg-success-600 dark:bg-success-500',
+  debe: 'bg-danger-600 dark:bg-danger-500',
+  neutro: 'bg-slate-400 dark:bg-slate-500',
 };
 
-const ETIQUETA_BALANCE: Record<EstadoBalance, string> = {
+const MONTO: Record<EstadoBalance, string> = {
+  recibe: 'text-success-700 dark:text-success-500',
+  debe: 'text-danger-700 dark:text-danger-500',
+  neutro: 'text-slate-600 dark:text-slate-400',
+};
+
+const ETIQUETA: Record<EstadoBalance, string> = {
   recibe: 'le deben',
   debe: 'debe',
   neutro: 'al día',
 };
 
+const NUMEROS = { fontVariant: ['tabular-nums' as const] };
+
 export default function Resultado({ route }: Props) {
   const { salidaId } = route.params;
   const { salidas, mensajero } = useApp();
+  const { spinner } = useTema();
   const [salida, setSalida] = useState<Salida | null | undefined>(undefined);
 
   // Siempre se calcula desde los gastos guardados: nunca queda desactualizado.
@@ -37,99 +48,120 @@ export default function Resultado({ route }: Props) {
 
   if (salida === undefined) {
     return (
-      <View style={styles.centro}>
-        <ActivityIndicator size="large" />
+      <View className="flex-1 items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <ActivityIndicator size="large" color={spinner} />
       </View>
     );
   }
   if (salida === null) {
     return (
-      <View style={styles.centro}>
-        <Text>Esta salida ya no existe.</Text>
+      <View className="flex-1 items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Text className="text-slate-900 dark:text-slate-50">Esta salida ya no existe.</Text>
       </View>
     );
   }
 
-  const { filas, transferencias, todoCuadrado } = armarFilasResultado(salida);
+  const { filas, transferencias, todoCuadrado, totalTexto } = armarFilasResultado(salida);
+  const indiceDe = (id: string) => Math.max(0, filas.findIndex((f) => f.id === id));
 
   function avisarSiFallo(r: ResultadoEnvio) {
     if (!r.ok) Alert.alert('No se pudo abrir WhatsApp', r.motivo);
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.seccion}>Balance de cada uno</Text>
-      {filas.map((f) => (
-        <View key={f.id} style={styles.fila}>
-          <Text style={styles.filaNombre}>{f.nombre}</Text>
-          <Text style={[styles.balance, { color: COLOR_BALANCE[f.estado] }]}>
-            {f.estado === 'neutro' ? ETIQUETA_BALANCE.neutro : `${ETIQUETA_BALANCE[f.estado]} ${f.montoTexto}`}
+    <ScrollView
+      className="flex-1 bg-slate-50 dark:bg-slate-900"
+      contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+    >
+      <View className="rounded-2xl bg-primary-600 p-5">
+        <Text className="text-white">Total gastado</Text>
+        <Text className="mt-1 text-4xl font-bold text-white" style={NUMEROS}>
+          {totalTexto}
+        </Text>
+        <View className="mt-3 flex-row items-center justify-between">
+          <View className="flex-row">
+            {filas.map((f, i) => (
+              <Avatar key={f.id} nombre={f.nombre} indice={i} className="-mr-2 border-2 border-primary-600" />
+            ))}
+          </View>
+          <Text className="font-semibold text-white">
+            {todoCuadrado
+              ? 'Sin pagos pendientes'
+              : transferencias.length === 1
+                ? '1 pago para cuadrar'
+                : `${transferencias.length} pagos para cuadrar`}
           </Text>
         </View>
-      ))}
+      </View>
 
-      <Text style={styles.seccion}>Pagos para cuadrar</Text>
+      <Text className="mb-1 mt-6 text-xl font-bold text-slate-900 dark:text-slate-50">
+        Pagos para cuadrar
+      </Text>
+
       {todoCuadrado ? (
-        <Text style={styles.cuadrado}>Todo cuadrado 🎉</Text>
+        <View className="items-center py-10">
+          <Text className="text-6xl">🐷</Text>
+          <Text className="mt-3 text-2xl font-bold text-slate-900 dark:text-slate-50">
+            Todo cuadrado 🎉
+          </Text>
+          <Text className="mt-1 text-center text-slate-600 dark:text-slate-400">
+            Nadie le debe nada a nadie.
+          </Text>
+        </View>
       ) : (
-        transferencias.map((t) => (
-          <View key={`${t.deId}-${t.aId}`} style={styles.fila}>
-            <Text style={styles.filaNombre}>
-              {t.deNombre} → {t.aNombre}
-            </Text>
-            <Text style={styles.monto}>{t.montoTexto}</Text>
-            <Pressable
-              style={styles.cobrar}
-              onPress={() => cobrarTransferencia(mensajero, salida, t).then(avisarSiFallo)}
+        <>
+          {transferencias.map((t) => (
+            <View
+              key={`${t.deId}-${t.aId}`}
+              className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800"
             >
-              <Text style={styles.cobrarTexto}>Cobrar</Text>
-            </Pressable>
-          </View>
-        ))
+              <View className="flex-row items-center justify-between gap-3">
+                <Avatar nombre={t.deNombre} indice={indiceDe(t.deId)} />
+                <Text className="flex-1 text-base font-semibold text-slate-900 dark:text-slate-50">
+                  {t.deNombre} → {t.aNombre}
+                </Text>
+                <Text className="text-2xl font-bold text-slate-900 dark:text-slate-50" style={NUMEROS}>
+                  {t.montoTexto}
+                </Text>
+              </View>
+              <Boton
+                texto="Cobrar"
+                className="mt-3"
+                onPress={() => cobrarTransferencia(mensajero, salida, t).then(avisarSiFallo)}
+              />
+            </View>
+          ))}
+
+          <Boton
+            texto="Compartir resumen"
+            variante="secundario"
+            className="mt-4"
+            onPress={() => compartirResumen(mensajero, salida).then(avisarSiFallo)}
+          />
+        </>
       )}
 
-      {!todoCuadrado && (
-        <Pressable
-          style={styles.compartir}
-          onPress={() => compartirResumen(mensajero, salida).then(avisarSiFallo)}
+      <Text className="mb-1 mt-8 text-xl font-bold text-slate-900 dark:text-slate-50">
+        Balance de cada uno
+      </Text>
+      {filas.map((f) => (
+        <View
+          key={f.id}
+          className="flex-row items-center border-b border-slate-200 py-3 dark:border-slate-700"
         >
-          <Text style={styles.compartirTexto}>Compartir resumen</Text>
-        </Pressable>
-      )}
+          <Avatar nombre={f.nombre} indice={filas.indexOf(f)} className="mr-3" />
+          <Text className="flex-1 text-base text-slate-900 dark:text-slate-50">{f.nombre}</Text>
+          <View className={`mr-3 h-3 w-3 rounded-full ${PUNTO[f.estado]}`} />
+          <View className="items-end">
+            {f.estado !== 'neutro' && (
+              <Text className={`text-base font-bold ${MONTO[f.estado]}`} style={NUMEROS}>
+                {f.montoTexto}
+              </Text>
+            )}
+            <Text className={`text-sm ${MONTO[f.estado]}`}>{ETIQUETA[f.estado]}</Text>
+          </View>
+        </View>
+      ))}
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  container: { padding: 16, backgroundColor: colores.fondo, flexGrow: 1 },
-  seccion: { fontWeight: '700', fontSize: 16, marginTop: 8, marginBottom: 8 },
-  fila: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colores.borde,
-  },
-  filaNombre: { flex: 1, fontSize: 16 },
-  balance: { fontWeight: '600', fontSize: 16 },
-  monto: { fontWeight: '700', fontSize: 16 },
-  cobrar: {
-    backgroundColor: colores.primario,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    marginLeft: 12,
-  },
-  cobrarTexto: { color: '#fff', fontWeight: '600' },
-  compartir: {
-    borderWidth: 1,
-    borderColor: colores.primario,
-    padding: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  compartirTexto: { color: colores.primario, fontWeight: '600' },
-  cuadrado: { fontSize: 20, textAlign: 'center', marginTop: 24 },
-});

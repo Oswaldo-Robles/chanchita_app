@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { useApp } from '../app/AppProvider';
 import type { RootStackParamList } from '../app/navegacion';
@@ -8,7 +8,8 @@ import { validarGasto } from '../domain/gastos';
 import { generarId } from '../domain/id';
 import { formatearMonto, parsearMonto } from '../domain/montos';
 import type { Salida } from '../domain/types';
-import { colores } from './tema';
+import { useTema } from './tema';
+import { Boton, Entrada, Etiqueta, TextoError } from './ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'FormGasto'>;
 
@@ -17,6 +18,7 @@ type Errores = { descripcion?: string; monto?: string; divididoEntre?: string };
 export default function FormGasto({ route, navigation }: Props) {
   const { salidaId, gastoId } = route.params;
   const { salidas } = useApp();
+  const { spinner } = useTema();
   const [salida, setSalida] = useState<Salida | null | undefined>(undefined);
   const [descripcion, setDescripcion] = useState('');
   const [monto, setMonto] = useState('');
@@ -49,15 +51,15 @@ export default function FormGasto({ route, navigation }: Props) {
 
   if (salida === undefined) {
     return (
-      <View style={styles.centro}>
-        <ActivityIndicator size="large" />
+      <View className="flex-1 items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <ActivityIndicator size="large" color={spinner} />
       </View>
     );
   }
   if (salida === null) {
     return (
-      <View style={styles.centro}>
-        <Text>Esta salida ya no existe.</Text>
+      <View className="flex-1 items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Text className="text-slate-900 dark:text-slate-50">Esta salida ya no existe.</Text>
       </View>
     );
   }
@@ -113,10 +115,14 @@ export default function FormGasto({ route, navigation }: Props) {
       : null;
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <Text style={styles.label}>Descripción</Text>
-      <TextInput
-        style={styles.input}
+    <ScrollView
+      className="flex-1 bg-slate-50 dark:bg-slate-900"
+      contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+      keyboardShouldPersistTaps="handled"
+    >
+      <Etiqueta>Descripción</Etiqueta>
+      <Entrada
+        conError={!!errores.descripcion}
         value={descripcion}
         onChangeText={(t) => {
           setDescripcion(t);
@@ -124,11 +130,11 @@ export default function FormGasto({ route, navigation }: Props) {
         }}
         placeholder="Ej. Pizza"
       />
-      {errores.descripcion && <Text style={styles.error}>{errores.descripcion}</Text>}
+      {errores.descripcion && <TextoError>{errores.descripcion}</TextoError>}
 
-      <Text style={styles.label}>Monto (S/)</Text>
-      <TextInput
-        style={styles.input}
+      <Etiqueta>Monto (S/)</Etiqueta>
+      <Entrada
+        conError={!!errores.monto}
         value={monto}
         onChangeText={(t) => {
           setMonto(t);
@@ -137,97 +143,73 @@ export default function FormGasto({ route, navigation }: Props) {
         placeholder="0.00"
         keyboardType="decimal-pad"
       />
-      {errores.monto && <Text style={styles.error}>{errores.monto}</Text>}
+      {errores.monto && <TextoError>{errores.monto}</TextoError>}
 
-      <Text style={styles.label}>Pagó</Text>
-      <View style={styles.chips}>
-        {salida.participantes.map((p) => (
-          <Pressable
-            key={p.id}
-            style={[styles.chip, pagadoPor === p.id && styles.chipActivo]}
-            onPress={() => setPagadoPor(p.id)}
-          >
-            <Text style={pagadoPor === p.id ? styles.chipTextoActivo : styles.chipTexto}>
-              {p.nombre}
-            </Text>
-          </Pressable>
-        ))}
+      <Etiqueta>Pagó</Etiqueta>
+      <View className="flex-row flex-wrap gap-2">
+        {salida.participantes.map((p) => {
+          const activo = pagadoPor === p.id;
+          return (
+            <Pressable
+              key={p.id}
+              onPress={() => setPagadoPor(p.id)}
+              className={
+                activo
+                  ? 'rounded-full border border-primary-300 bg-primary-50 px-4 py-2 dark:border-primary-400 dark:bg-primary-900'
+                  : 'rounded-full border border-transparent bg-slate-100 px-4 py-2 dark:bg-slate-800'
+              }
+            >
+              <Text
+                className={
+                  activo
+                    ? 'font-bold text-primary-700 dark:text-primary-100'
+                    : 'text-slate-700 dark:text-slate-200'
+                }
+              >
+                {p.nombre}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
 
-      <Text style={styles.label}>Se divide entre ({divididoEntre.length})</Text>
+      <Etiqueta>{`Se divide entre (${divididoEntre.length})`}</Etiqueta>
       {salida.participantes.map((p) => {
         const marcado = divididoEntre.includes(p.id);
         return (
           <Pressable
             key={p.id}
-            style={styles.fila}
+            className="flex-row items-center border-b border-slate-200 py-3 dark:border-slate-700"
             onPress={() => {
               alternar(p.id);
               setErrores((e) => ({ ...e, divididoEntre: undefined }));
             }}
           >
-            <Text style={styles.casilla}>{marcado ? '☑' : '☐'}</Text>
-            <Text style={styles.filaNombre}>{p.nombre}</Text>
+            <View
+              className={
+                marcado
+                  ? 'mr-3 h-6 w-6 items-center justify-center rounded-md border-2 border-primary-600 bg-primary-600'
+                  : 'mr-3 h-6 w-6 items-center justify-center rounded-md border-2 border-slate-400 dark:border-slate-500'
+              }
+            >
+              {marcado && <Text className="text-sm font-bold text-white">✓</Text>}
+            </View>
+            <Text className="text-base text-slate-900 dark:text-slate-50">{p.nombre}</Text>
           </Pressable>
         );
       })}
-      {errores.divididoEntre && <Text style={styles.error}>{errores.divididoEntre}</Text>}
-      {porPersona && <Text style={styles.suave}>≈ {porPersona} por persona</Text>}
+      {errores.divididoEntre && <TextoError>{errores.divididoEntre}</TextoError>}
+      {porPersona && (
+        <Text className="mt-3 text-slate-600 dark:text-slate-400">≈ {porPersona} por persona</Text>
+      )}
 
-      <Pressable style={styles.boton} onPress={guardar}>
-        <Text style={styles.botonTexto}>Guardar gasto</Text>
-      </Pressable>
+      <Boton texto="Guardar gasto" className="mt-6" onPress={guardar} />
 
       {gastoId && (
-        <Pressable style={styles.eliminar} onPress={confirmarEliminar}>
-          <Text style={styles.eliminarTexto}>Eliminar gasto</Text>
+        <Pressable className="mt-4 items-center p-3" onPress={confirmarEliminar}>
+          <Text className="font-semibold text-danger-700 dark:text-danger-500">Eliminar gasto</Text>
         </Pressable>
       )}
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  container: { padding: 16, backgroundColor: colores.fondo, flexGrow: 1 },
-  label: { fontWeight: '700', marginTop: 16, marginBottom: 6 },
-  input: {
-    borderWidth: 1,
-    borderColor: colores.borde,
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 16,
-  },
-  error: { color: colores.error, marginTop: 4 },
-  suave: { color: colores.textoSuave, marginTop: 8 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    borderWidth: 1,
-    borderColor: colores.borde,
-    borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-  },
-  chipActivo: { backgroundColor: colores.primario, borderColor: colores.primario },
-  chipTexto: { color: colores.texto },
-  chipTextoActivo: { color: '#fff', fontWeight: '600' },
-  fila: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colores.borde,
-  },
-  casilla: { fontSize: 22, marginRight: 12, color: colores.primario },
-  filaNombre: { fontSize: 16 },
-  boton: {
-    backgroundColor: colores.primario,
-    padding: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  botonTexto: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  eliminar: { marginTop: 20, padding: 12, alignItems: 'center' },
-  eliminarTexto: { color: colores.error, fontWeight: '600' },
-});

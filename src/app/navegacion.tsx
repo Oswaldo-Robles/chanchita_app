@@ -1,6 +1,6 @@
-import { NavigationContainer } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, useColorScheme } from 'react-native';
 
 import DetalleSalida from '../screens/DetalleSalida';
 import FormGasto from '../screens/FormGasto';
@@ -8,6 +8,7 @@ import Inicio from '../screens/Inicio';
 import NuevaSalida from '../screens/NuevaSalida';
 import Onboarding from '../screens/Onboarding';
 import Resultado from '../screens/Resultado';
+import { temaNavegacion } from '../screens/tema';
 import { useApp } from './AppProvider';
 
 export type RootStackParamList = {
@@ -23,17 +24,27 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function Navegacion() {
   const { cargando, perfil } = useApp();
+  const oscuro = useColorScheme() === 'dark';
+  const colores = oscuro ? temaNavegacion.oscuro : temaNavegacion.claro;
+  const tema = { ...(oscuro ? DarkTheme : DefaultTheme), colors: colores };
 
   if (cargando) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" />
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colores.background,
+        }}
+      >
+        <ActivityIndicator size="large" color={colores.primary} />
       </View>
     );
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={tema}>
       <Stack.Navigator>
         {perfil ? (
           <>

@@ -5,9 +5,7 @@ import {
   FlatList,
   Modal,
   Pressable,
-  StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 
@@ -15,7 +13,8 @@ import { validarParticipante, yaEstaAgregado } from '../domain/salidas';
 import type { Participante } from '../domain/types';
 import { leerContactos } from '../services/contactos';
 import type { ContactoTelefono } from '../services/contactos';
-import { colores } from './tema';
+import { useTema } from './tema';
+import { Boton, Entrada, Etiqueta, TextoError } from './ui';
 
 type Props = {
   visible: boolean;
@@ -29,6 +28,7 @@ type Props = {
 type Pestana = 'contactos' | 'manual';
 
 export default function AgregarParticipante({ visible, participantes, onCerrar, onAgregar }: Props) {
+  const { toastFondo, toastTexto } = useTema();
   const [pestana, setPestana] = useState<Pestana>('contactos');
   const [toast, setToast] = useState<string | null>(null);
   const opacidad = useRef(new Animated.Value(0)).current;
@@ -52,22 +52,36 @@ export default function AgregarParticipante({ visible, participantes, onCerrar, 
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onCerrar}>
-      <View style={styles.container}>
-        <View style={styles.cabecera}>
-          <Text style={styles.titulo}>Agregar participante</Text>
+      <View className="flex-1 bg-slate-50 p-4 pt-12 dark:bg-slate-900">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-xl font-bold text-slate-900 dark:text-slate-50">
+            Agregar participante
+          </Text>
           <Pressable onPress={onCerrar} hitSlop={12}>
-            <Text style={styles.cerrar}>Listo</Text>
+            <Text className="text-base font-semibold text-primary-700 dark:text-primary-400">
+              Listo
+            </Text>
           </Pressable>
         </View>
 
-        <View style={styles.pestanas}>
+        <View className="my-4 flex-row gap-2">
           {(['contactos', 'manual'] as const).map((p) => (
             <Pressable
               key={p}
-              style={[styles.pestana, pestana === p && styles.pestanaActiva]}
+              className={
+                pestana === p
+                  ? 'flex-1 items-center rounded-lg bg-primary-600 p-2.5'
+                  : 'flex-1 items-center rounded-lg bg-slate-100 p-2.5 dark:bg-slate-800'
+              }
               onPress={() => setPestana(p)}
             >
-              <Text style={[styles.pestanaTexto, pestana === p && styles.pestanaTextoActivo]}>
+              <Text
+                className={
+                  pestana === p
+                    ? 'font-semibold text-white'
+                    : 'font-semibold text-slate-700 dark:text-slate-200'
+                }
+              >
                 {p === 'contactos' ? 'Mis contactos' : 'A mano'}
               </Text>
             </Pressable>
@@ -85,8 +99,20 @@ export default function AgregarParticipante({ visible, participantes, onCerrar, 
         )}
 
         {toast && (
-          <Animated.View pointerEvents="none" style={[styles.toast, { opacity: opacidad }]}>
-            <Text style={styles.toastTexto}>{toast}</Text>
+          <Animated.View
+            pointerEvents="none"
+            style={{
+              opacity: opacidad,
+              position: 'absolute',
+              bottom: 40,
+              alignSelf: 'center',
+              backgroundColor: toastFondo,
+              paddingVertical: 10,
+              paddingHorizontal: 18,
+              borderRadius: 24,
+            }}
+          >
+            <Text style={{ color: toastTexto, fontWeight: '600' }}>{toast}</Text>
           </Animated.View>
         )}
       </View>
@@ -103,6 +129,7 @@ function ListaContactos({
   onAgregar: Props['onAgregar'];
   irAManual: () => void;
 }) {
+  const { spinner } = useTema();
   const [estado, setEstado] = useState<
     | { tipo: 'inicial' }
     | { tipo: 'cargando' }
@@ -120,36 +147,32 @@ function ListaContactos({
 
   if (estado.tipo === 'inicial') {
     return (
-      <View style={styles.centro}>
-        <Text style={styles.texto}>
+      <View className="flex-1 items-center justify-center gap-4 p-2">
+        <Text className="text-center text-slate-600 dark:text-slate-400">
           Elige a tus amigos de tu agenda. Solo leemos nombre y número, y no salen del teléfono.
         </Text>
-        <Pressable style={styles.boton} onPress={cargar}>
-          <Text style={styles.botonTexto}>Leer mis contactos</Text>
-        </Pressable>
+        <Boton texto="Leer mis contactos" className="self-stretch" onPress={cargar} />
       </View>
     );
   }
 
   if (estado.tipo === 'cargando') {
     return (
-      <View style={styles.centro}>
-        <ActivityIndicator size="large" />
+      <View className="flex-1 items-center justify-center">
+        <ActivityIndicator size="large" color={spinner} />
       </View>
     );
   }
 
   if (estado.tipo === 'fallo') {
     return (
-      <View style={styles.centro}>
-        <Text style={styles.texto}>
+      <View className="flex-1 items-center justify-center gap-4 p-2">
+        <Text className="text-center text-slate-600 dark:text-slate-400">
           {estado.motivo === 'denegado'
             ? 'Sin permiso de contactos no podemos mostrar tu agenda. No pasa nada: puedes agregar a tus amigos a mano.'
             : 'No pudimos leer tus contactos. Puedes agregar a tus amigos a mano.'}
         </Text>
-        <Pressable style={styles.boton} onPress={irAManual}>
-          <Text style={styles.botonTexto}>Agregar a mano</Text>
-        </Pressable>
+        <Boton texto="Agregar a mano" className="self-stretch" onPress={irAManual} />
       </View>
     );
   }
@@ -158,19 +181,16 @@ function ListaContactos({
   const visibles = estado.contactos.filter((c) => c.nombre.toLowerCase().includes(filtro));
 
   return (
-    <View style={{ flex: 1 }}>
-      <TextInput
-        style={styles.input}
-        value={busqueda}
-        onChangeText={setBusqueda}
-        placeholder="Buscar contacto"
-      />
-      {aviso && <Text style={styles.error}>{aviso}</Text>}
+    <View className="flex-1">
+      <Entrada value={busqueda} onChangeText={setBusqueda} placeholder="Buscar contacto" />
+      {aviso && <TextoError>{aviso}</TextoError>}
       <FlatList
         data={visibles}
         keyExtractor={(c) => c.id}
         keyboardShouldPersistTaps="handled"
-        ListEmptyComponent={<Text style={styles.vacio}>Sin resultados</Text>}
+        ListEmptyComponent={
+          <Text className="mt-6 text-center text-slate-600 dark:text-slate-400">Sin resultados</Text>
+        }
         extraData={participantes}
         renderItem={({ item }) => (
           <FilaContacto
@@ -207,17 +227,33 @@ function FilaContacto({
 
   return (
     <Pressable
-      style={[styles.fila, agregado && styles.filaAgregada]}
+      className={`flex-row items-center border-b border-slate-200 py-3 dark:border-slate-700 ${
+        agregado ? 'opacity-60' : ''
+      }`}
       onPress={onPress}
       disabled={agregado}
     >
-      <View style={{ flex: 1 }}>
-        <Text style={styles.filaNombre}>{contacto.nombre}</Text>
-        <Text style={styles.filaDetalle}>{contacto.telefono ?? 'sin celular válido'}</Text>
+      <View className="flex-1">
+        <Text className="text-base font-medium text-slate-900 dark:text-slate-50">
+          {contacto.nombre}
+        </Text>
+        <Text className="mt-0.5 text-slate-600 dark:text-slate-400">
+          {contacto.telefono ?? 'sin celular válido'}
+        </Text>
       </View>
       {agregado && (
-        <Animated.View style={[styles.check, { transform: [{ scale: escala }] }]}>
-          <Text style={styles.checkTexto}>✓</Text>
+        <Animated.View
+          style={{
+            transform: [{ scale: escala }],
+            width: 28,
+            height: 28,
+            borderRadius: 14,
+            backgroundColor: '#e11d48',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={{ color: '#fff', fontWeight: 'bold' }}>✓</Text>
         </Animated.View>
       )}
     </Pressable>
@@ -248,106 +284,34 @@ function FormularioManual({ onAgregar }: { onAgregar: Props['onAgregar'] }) {
   }
 
   return (
-    <View style={styles.formulario}>
-      <Text style={styles.etiqueta}>Nombre</Text>
-      <TextInput
-        style={[styles.input, errores.nombre && styles.inputError]}
+    <View className="flex-1">
+      <Etiqueta>Nombre</Etiqueta>
+      <Entrada
+        conError={!!errores.nombre}
         value={nombre}
         onChangeText={setNombre}
         placeholder="Ej. Beto"
         autoCapitalize="words"
       />
-      {errores.nombre && <Text style={styles.error}>{errores.nombre}</Text>}
+      {errores.nombre && <TextoError>{errores.nombre}</TextoError>}
 
-      <Text style={styles.etiqueta}>Celular (opcional)</Text>
-      <TextInput
-        style={[styles.input, errores.telefono && styles.inputError]}
+      <Etiqueta>Celular (opcional)</Etiqueta>
+      <Entrada
+        conError={!!errores.telefono}
         value={telefono}
         onChangeText={setTelefono}
         placeholder="987654321"
         keyboardType="number-pad"
         maxLength={12}
       />
-      {errores.telefono && <Text style={styles.error}>{errores.telefono}</Text>}
-      <Text style={styles.ayuda}>Con el celular podrás cobrarle por WhatsApp.</Text>
+      {errores.telefono && <TextoError>{errores.telefono}</TextoError>}
+      <Text className="mt-1.5 text-slate-600 dark:text-slate-400">
+        Con el celular podrás cobrarle por WhatsApp.
+      </Text>
 
-      {errores.general && <Text style={styles.error}>{errores.general}</Text>}
+      {errores.general && <TextoError>{errores.general}</TextoError>}
 
-      <Pressable style={styles.boton} onPress={agregar}>
-        <Text style={styles.botonTexto}>Agregar</Text>
-      </Pressable>
+      <Boton texto="Agregar" className="mt-5" onPress={agregar} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colores.fondo, padding: 16, paddingTop: 48 },
-  cabecera: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  titulo: { fontSize: 20, fontWeight: 'bold' },
-  cerrar: { color: colores.primario, fontWeight: '600', fontSize: 16 },
-  pestanas: { flexDirection: 'row', marginVertical: 16, gap: 8 },
-  pestana: {
-    flex: 1,
-    padding: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-    backgroundColor: colores.fondoSuave,
-  },
-  pestanaActiva: { backgroundColor: colores.primario },
-  pestanaTexto: { fontWeight: '600', color: colores.texto },
-  pestanaTextoActivo: { color: '#fff' },
-  centro: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16, padding: 8 },
-  texto: { textAlign: 'center', color: colores.textoSuave },
-  boton: {
-    backgroundColor: colores.primario,
-    padding: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    alignSelf: 'stretch',
-    marginTop: 8,
-  },
-  botonTexto: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  input: {
-    borderWidth: 1,
-    borderColor: colores.borde,
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 6,
-  },
-  inputError: { borderColor: colores.error },
-  error: { color: colores.error, marginBottom: 6 },
-  ayuda: { color: colores.textoSuave, marginBottom: 8 },
-  etiqueta: { fontWeight: '600', marginBottom: 6, marginTop: 8 },
-  formulario: { flex: 1 },
-  fila: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colores.borde,
-  },
-  filaAgregada: { opacity: 0.55 },
-  check: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colores.primario,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkTexto: { color: '#fff', fontWeight: 'bold' },
-  toast: {
-    position: 'absolute',
-    bottom: 40,
-    alignSelf: 'center',
-    backgroundColor: colores.texto,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 24,
-  },
-  toastTexto: { color: '#fff', fontWeight: '600' },
-  filaNombre: { fontSize: 16, fontWeight: '500' },
-  filaDetalle: { color: colores.textoSuave, marginTop: 2 },
-  vacio: { textAlign: 'center', color: colores.textoSuave, marginTop: 24 },
-});

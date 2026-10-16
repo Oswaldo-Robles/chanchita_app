@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { useApp } from '../app/AppProvider';
 import type { RootStackParamList } from '../app/navegacion';
@@ -15,7 +15,7 @@ import {
 } from '../domain/salidas';
 import type { Participante } from '../domain/types';
 import AgregarParticipante from './AgregarParticipante';
-import { colores } from './tema';
+import { Boton, Entrada, Etiqueta, TextoError } from './ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NuevaSalida'>;
 
@@ -97,65 +97,75 @@ export default function NuevaSalida({ navigation }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      className="flex-1 bg-slate-50 dark:bg-slate-900"
+      contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+      keyboardShouldPersistTaps="handled"
+    >
       {!esBorradorVacio(nombre, participantes) && (
-        <View style={styles.avisoBorrador}>
-          <Text style={styles.avisoTexto}>Borrador guardado automáticamente</Text>
+        <View className="flex-row items-center justify-between rounded-lg bg-slate-100 p-3 dark:bg-slate-800">
+          <Text className="text-sm text-slate-600 dark:text-slate-400">
+            Borrador guardado automáticamente
+          </Text>
           <Pressable onPress={empezarDeNuevo} hitSlop={10}>
-            <Text style={styles.avisoAccion}>Empezar de nuevo</Text>
+            <Text className="text-sm font-semibold text-primary-700 dark:text-primary-400">
+              Empezar de nuevo
+            </Text>
           </Pressable>
         </View>
       )}
-      <Text style={styles.etiqueta}>Nombre de la salida</Text>
-      <TextInput
-        style={[styles.input, errores.nombre && styles.inputError]}
+
+      <Etiqueta>Nombre de la salida</Etiqueta>
+      <Entrada
+        conError={!!errores.nombre}
         value={nombre}
         onChangeText={setNombre}
         placeholder="Ej. Pizza del viernes"
       />
-      {errores.nombre && <Text style={styles.error}>{errores.nombre}</Text>}
+      {errores.nombre && <TextoError>{errores.nombre}</TextoError>}
 
-      <Text style={styles.etiqueta}>Fecha</Text>
-      <TextInput
-        style={[styles.input, errores.fecha && styles.inputError]}
+      <Etiqueta>Fecha</Etiqueta>
+      <Entrada
+        conError={!!errores.fecha}
         value={fecha}
         onChangeText={setFecha}
         placeholder="AAAA-MM-DD"
         keyboardType="numbers-and-punctuation"
         maxLength={10}
       />
-      {errores.fecha && <Text style={styles.error}>{errores.fecha}</Text>}
+      {errores.fecha && <TextoError>{errores.fecha}</TextoError>}
 
-      <Text style={styles.etiqueta}>Participantes ({participantes.length})</Text>
+      <Etiqueta>{`Participantes (${participantes.length})`}</Etiqueta>
       {participantes.map((p) => (
-        <View key={p.id} style={styles.fila}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.filaNombre}>
+        <View
+          key={p.id}
+          className="flex-row items-center border-b border-slate-200 py-3 dark:border-slate-700"
+        >
+          <View className="flex-1">
+            <Text className="text-base font-medium text-slate-900 dark:text-slate-50">
               {p.nombre}
               {p.esOrganizador ? ' (tú)' : ''}
             </Text>
-            <Text style={styles.filaDetalle}>{p.telefono ?? 'sin celular'}</Text>
+            <Text className="mt-0.5 text-slate-600 dark:text-slate-400">
+              {p.telefono ?? 'sin celular'}
+            </Text>
           </View>
           {!p.esOrganizador && (
             <Pressable onPress={() => quitar(p.id)} hitSlop={10}>
-              <Text style={styles.quitar}>Quitar</Text>
+              <Text className="font-semibold text-danger-700 dark:text-danger-500">Quitar</Text>
             </Pressable>
           )}
         </View>
       ))}
-      {errores.participantes && <Text style={styles.error}>{errores.participantes}</Text>}
+      {errores.participantes && <TextoError>{errores.participantes}</TextoError>}
 
-      <Pressable style={styles.botonSecundario} onPress={() => setAgregando(true)}>
-        <Text style={styles.botonSecundarioTexto}>+ Agregar participante</Text>
-      </Pressable>
-
-      <Pressable
-        style={[styles.boton, guardando && { opacity: 0.6 }]}
-        onPress={crear}
-        disabled={guardando}
-      >
-        <Text style={styles.botonTexto}>Crear salida</Text>
-      </Pressable>
+      <Boton
+        texto="+ Agregar participante"
+        variante="secundario"
+        className="mt-4"
+        onPress={() => setAgregando(true)}
+      />
+      <Boton texto="Crear salida" className="mt-5" onPress={crear} deshabilitado={guardando} />
 
       <AgregarParticipante
         visible={agregando}
@@ -166,55 +176,3 @@ export default function NuevaSalida({ navigation }: Props) {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  avisoBorrador: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: colores.fondoSuave,
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 4,
-  },
-  avisoTexto: { color: colores.textoSuave, fontSize: 13 },
-  avisoAccion: { color: colores.primario, fontWeight: '600', fontSize: 13 },
-  container: { padding: 16, backgroundColor: colores.fondo, flexGrow: 1 },
-  etiqueta: { fontWeight: '600', marginTop: 12, marginBottom: 6 },
-  input: {
-    borderWidth: 1,
-    borderColor: colores.borde,
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 16,
-  },
-  inputError: { borderColor: colores.error },
-  error: { color: colores.error, marginTop: 4 },
-  fila: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colores.borde,
-  },
-  filaNombre: { fontSize: 16, fontWeight: '500' },
-  filaDetalle: { color: colores.textoSuave, marginTop: 2 },
-  quitar: { color: colores.error, fontWeight: '600' },
-  botonSecundario: {
-    borderWidth: 1,
-    borderColor: colores.primario,
-    padding: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 14,
-  },
-  botonSecundarioTexto: { color: colores.primario, fontWeight: '600' },
-  boton: {
-    backgroundColor: colores.primario,
-    padding: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  botonTexto: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-});

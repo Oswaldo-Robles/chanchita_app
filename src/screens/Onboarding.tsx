@@ -1,16 +1,9 @@
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, Text, View } from 'react-native';
 
 import { useApp } from '../app/AppProvider';
 import { validarPerfil } from '../domain/perfil';
+import { Boton, Entrada, Etiqueta, TextoError } from './ui';
 
 export default function Onboarding() {
   const { guardarPerfil } = useApp();
@@ -36,75 +29,44 @@ export default function Onboarding() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      className="flex-1 justify-center bg-slate-50 p-6 dark:bg-slate-900"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Text style={styles.emoji}>🐷</Text>
-      <Text style={styles.titulo}>Bienvenido a Chanchita</Text>
-      <Text style={styles.subtitulo}>
+      <Text className="text-center text-6xl">🐷</Text>
+      <Text className="mt-2 text-center text-3xl font-bold text-slate-900 dark:text-slate-50">
+        Bienvenido a Chanchita
+      </Text>
+      <Text className="mb-6 mt-2 text-center text-slate-600 dark:text-slate-400">
         Dos datos y listo. Tu número de Yape aparecerá en los mensajes de cobro.
       </Text>
 
-      <View style={styles.campo}>
-        <Text style={styles.etiqueta}>Tu nombre</Text>
-        <TextInput
-          style={[styles.input, errores.nombre && styles.inputError]}
+      <View>
+        <Etiqueta>Tu nombre</Etiqueta>
+        <Entrada
+          conError={!!errores.nombre}
           value={nombre}
           onChangeText={setNombre}
           placeholder="Ej. Jesús"
           autoCapitalize="words"
           returnKeyType="next"
         />
-        {errores.nombre && <Text style={styles.error}>{errores.nombre}</Text>}
+        {errores.nombre && <TextoError>{errores.nombre}</TextoError>}
       </View>
 
-      <View style={styles.campo}>
-        <Text style={styles.etiqueta}>Tu número de Yape</Text>
-        <TextInput
-          style={[styles.input, errores.telefono && styles.inputError]}
+      <View>
+        <Etiqueta>Tu número de Yape</Etiqueta>
+        <Entrada
+          conError={!!errores.telefono}
           value={telefono}
           onChangeText={setTelefono}
           placeholder="987654321"
           keyboardType="number-pad"
           maxLength={11}
         />
-        {errores.telefono && <Text style={styles.error}>{errores.telefono}</Text>}
+        {errores.telefono && <TextoError>{errores.telefono}</TextoError>}
       </View>
 
-      <Pressable
-        style={[styles.boton, guardando && styles.botonDeshabilitado]}
-        onPress={continuar}
-        disabled={guardando}
-      >
-        <Text style={styles.botonTexto}>Continuar</Text>
-      </Pressable>
+      <Boton texto="Continuar" className="mt-6" onPress={continuar} deshabilitado={guardando} />
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, justifyContent: 'center', backgroundColor: '#fff' },
-  emoji: { fontSize: 56, textAlign: 'center' },
-  titulo: { fontSize: 26, fontWeight: 'bold', textAlign: 'center', marginTop: 8 },
-  subtitulo: { textAlign: 'center', color: '#555', marginTop: 8, marginBottom: 28 },
-  campo: { marginBottom: 16 },
-  etiqueta: { fontWeight: '600', marginBottom: 6 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 16,
-  },
-  inputError: { borderColor: '#d32f2f' },
-  error: { color: '#d32f2f', marginTop: 4 },
-  boton: {
-    backgroundColor: '#e91e63',
-    padding: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  botonDeshabilitado: { opacity: 0.6 },
-  botonTexto: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-});
