@@ -6,4 +6,5 @@ export const colores = {
   fondo: '#fff',
   fondoSuave: '#f6f6f6',
   error: '#d32f2f',
+  exito: '#2e7d32',
 };
