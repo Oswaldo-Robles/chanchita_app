@@ -154,6 +154,13 @@ export default function DetalleSalida({ route, navigation }: Props) {
         <Text style={styles.botonSecundarioTexto}>+ Agregar gasto</Text>
       </Pressable>
 
+      <Pressable
+        style={styles.botonPrimario}
+        onPress={() => navigation.navigate('Resultado', { salidaId: salida.id })}
+      >
+        <Text style={styles.botonPrimarioTexto}>Cuadrar cuentas</Text>
+      </Pressable>
+
       <Pressable style={styles.eliminar} onPress={confirmarEliminar}>
         <Text style={styles.eliminarTexto}>Eliminar salida</Text>
       </Pressable>
@@ -195,6 +202,14 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   botonSecundarioTexto: { color: colores.primario, fontWeight: '600' },
+  botonPrimario: {
+    backgroundColor: colores.primario,
+    padding: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  botonPrimarioTexto: { color: '#fff', fontWeight: '700', fontSize: 16 },
   eliminar: { marginTop: 40, padding: 12, alignItems: 'center' },
   eliminarTexto: { color: colores.error, fontWeight: '600' },
 });
